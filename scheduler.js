@@ -101,7 +101,16 @@ async function gerarAlertasDocumentos(){
       responsavel: doc.responsavel || "SST / Compliance",
       chave_origem: `scheduler-documento-${doc.id}-${doc.data_validade}`
     });
-  }
+async function gerarAlertasEsocial(){
+  const { data, error } = await supabase
+    .from("eventos_esocial")
+    .select("id,empresa_id,evento_codigo,nome_trabalhador,status,erro_mensagem,created_at")
+    .in("status", ["erro", "recusado", "rejeitado"]);
+
+  if(error){
+    console.error("Erro eSocial:", error.message);
+    return;
+    }
 }
 
 async function gerarAlertasEsocial(){
