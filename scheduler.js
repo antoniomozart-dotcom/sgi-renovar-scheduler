@@ -107,7 +107,7 @@ async function gerarAlertasDocumentos(){
 async function gerarAlertasEsocial(){
   const { data, error } = await supabase
     .from("eventos_esocial")
-    .select("id,empresa_id,evento_codigo,nome_trabalhador,status,erro_mensagem,created_at")
+    .select("id,empresa_id,eventos_esocial,nome_trabalhador,status,erro_mensagem,created_at")
     .in("status", ["erro", "recusado", "rejeitado"]);
 
   if(error){
