@@ -110,18 +110,21 @@ async function gerarAlertasEsocial(){
   if(error){
     console.error("Erro eSocial:", error.message);
     return;
-    }
+  }
+
+  for(const ev of data || []){
+    await criarAlerta({
+      empresa_id: ev.empresa_id,
+      origem: "eSocial",
+      prioridade: "alta",
+      titulo: `Evento ${ev.evento_codigo} com ${ev.status}`,
+      descricao: `Trabalhador: ${ev.nome_trabalhador || "-"}. Erro: ${ev.erro_mensagem || "Verificar Central Operacional eSocial."}`,
+      data_vencimento: null,
+      responsavel: "Operação eSocial",
+      chave_origem: `scheduler-esocial-${ev.id}-${ev.status}`
+    });
+  }
 }
-
-async function gerarAlertasEsocial(){
-  const { data, error } = await supabase
-    .from("eventos_esocial")
-    .select("id,empresa_id,evento,nome_trabalhador,status,erro_mensagem,created_at")
-    .in("status", ["erro", "recusado", "rejeitado"]);
-
-  if(error){
-    console.error("Erro eSocial:", error.message);
-    return;
   }
 
   for(const ev of data || []){
