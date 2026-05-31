@@ -8,7 +8,6 @@ const supabase = createClient(
 
 const INTERVALO = Number(process.env.SCHEDULER_INTERVAL_MS || 60000);
 const DIAS_DOCUMENTOS = Number(process.env.ALERTA_DOCUMENTOS_DIAS || 60);
-const DIAS_ASO = Number(process.env.ALERTA_ASO_DIAS || 30);
 
 let executando = false;
 
@@ -16,21 +15,20 @@ function esperar(ms){
   return new Promise(resolve => setTimeout(resolve, ms));
 }
 
-function hojeISO(){
-  return new Date().toISOString().slice(0,10);
-}
-
 function addDias(dias){
   const d = new Date();
   d.setDate(d.getDate() + dias);
-  return d.toISOString().slice(0,10);
+  return d.toISOString().slice(0, 10);
 }
 
 function diffDias(data){
   if(!data) return null;
+
   const hoje = new Date();
-  hoje.setHours(0,0,0,0);
+  hoje.setHours(0, 0, 0, 0);
+
   const alvo = new Date(data + "T00:00:00");
+
   return Math.ceil((alvo - hoje) / (1000 * 60 * 60 * 24));
 }
 
@@ -88,7 +86,6 @@ async function gerarAlertasDocumentos(){
 
   for(const doc of data || []){
     const dias = diffDias(doc.data_validade);
-
     const vencido = dias < 0;
 
     await criarAlerta({
@@ -101,6 +98,9 @@ async function gerarAlertasDocumentos(){
       responsavel: doc.responsavel || "SST / Compliance",
       chave_origem: `scheduler-documento-${doc.id}-${doc.data_validade}`
     });
+  }
+}
+
 async function gerarAlertasEsocial(){
   const { data, error } = await supabase
     .from("eventos_esocial")
@@ -117,22 +117,7 @@ async function gerarAlertasEsocial(){
       empresa_id: ev.empresa_id,
       origem: "eSocial",
       prioridade: "alta",
-      titulo: `Evento ${ev.evento_codigo} com ${ev.status}`,
-      descricao: `Trabalhador: ${ev.nome_trabalhador || "-"}. Erro: ${ev.erro_mensagem || "Verificar Central Operacional eSocial."}`,
-      data_vencimento: null,
-      responsavel: "Operação eSocial",
-      chave_origem: `scheduler-esocial-${ev.id}-${ev.status}`
-    });
-  }
-}
-  }
-
-  for(const ev of data || []){
-    await criarAlerta({
-      empresa_id: ev.empresa_id,
-      origem: "eSocial",
-      prioridade: "alta",
-      titulo: `Evento ${ev.evento_codigo} com ${ev.status}`,
+      titulo: `Evento ${ev.evento_codigo || "eSocial"} com ${ev.status}`,
       descricao: `Trabalhador: ${ev.nome_trabalhador || "-"}. Erro: ${ev.erro_mensagem || "Verificar Central Operacional eSocial."}`,
       data_vencimento: null,
       responsavel: "Operação eSocial",
@@ -142,25 +127,19 @@ async function gerarAlertasEsocial(){
 }
 
 async function gerarAlertasASO(){
-  const dataLimite = addDias(DIAS_ASO);
-
   const { data, error } = await supabase
     .from("s2220_aso")
     .select("id,empresa_id,nome_trabalhador,cpf_trabalhador,data_aso,tipo_exame,resultado_aso,status_esocial")
-    .lte("data_aso", dataLimite);
+    .not("data_aso", "is", null);
 
   if(error){
     console.error("Erro ASO:", error.message);
     return;
   }
 
-  // Regra simples: ASO muito antigo sem novo controle deve ser revisado.
-  // Depois podemos substituir por validade calculada por risco/cargo.
   const hoje = new Date();
 
   for(const aso of data || []){
-    if(!aso.data_aso) continue;
-
     const dataAso = new Date(aso.data_aso + "T00:00:00");
     const diasPassados = Math.floor((hoje - dataAso) / (1000 * 60 * 60 * 24));
 
@@ -191,7 +170,9 @@ async function gerarAlertasCAT(){
   }
 
   for(const cat of data || []){
-    if(cat.status_esocial !== "enviado" && cat.status_esocial !== "processado"){
+    const statusESocial = String(cat.status_esocial || "").toLowerCase();
+
+    if(statusESocial !== "enviado" && statusESocial !== "processado"){
       await criarAlerta({
         empresa_id: cat.empresa_id,
         origem: "CAT",
@@ -200,7 +181,7 @@ async function gerarAlertasCAT(){
         descricao: `${cat.nome_trabalhador || "Trabalhador"} possui CAT registrada em ${cat.data_acidente || "-"} sem confirmação final no eSocial.`,
         data_vencimento: cat.data_acidente || null,
         responsavel: "SST / eSocial",
-        chave_origem: `scheduler-cat-${cat.id}-${cat.status_esocial || "sem_status"}`
+        chave_origem: `scheduler-cat-${cat.id}-${statusESocial || "sem_status"}`
       });
     }
   }

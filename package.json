@@ -1,11 +1,10 @@
 {
   "name": "sgi-renovar-scheduler",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "private": true,
   "type": "module",
   "scripts": {
-    "scheduler": "node scheduler.js",
-    "dev": "node --watch scheduler.js"
+    "scheduler": "node scheduler.js"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.49.1",
