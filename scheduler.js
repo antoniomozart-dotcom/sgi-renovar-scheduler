@@ -76,7 +76,7 @@ async function gerarAlertasDocumentos(){
   const dataLimite = addDias(DIAS_DOCUMENTOS);
 
   const { data, error } = await supabase
-    .from("sst_documentos")
+    .from("documentos_sst")
     .select("id,empresa_id,tipo_documento,nome_documento,data_validade,responsavel")
     .not("data_validade", "is", null)
     .lte("data_validade", dataLimite);
@@ -106,7 +106,7 @@ async function gerarAlertasDocumentos(){
 
 async function gerarAlertasEsocial(){
   const { data, error } = await supabase
-    .from("esocial_eventos")
+    .from("eventos_esocial")
     .select("id,empresa_id,evento_codigo,nome_trabalhador,status,erro_mensagem,created_at")
     .in("status", ["erro", "recusado", "rejeitado"]);
 
@@ -133,7 +133,7 @@ async function gerarAlertasASO(){
   const dataLimite = addDias(DIAS_ASO);
 
   const { data, error } = await supabase
-    .from("aso_s2220")
+    .from("s2220_aso")
     .select("id,empresa_id,nome_trabalhador,cpf_trabalhador,data_aso,tipo_exame,resultado_aso,status_esocial")
     .lte("data_aso", dataLimite);
 
@@ -169,7 +169,7 @@ async function gerarAlertasASO(){
 
 async function gerarAlertasCAT(){
   const { data, error } = await supabase
-    .from("comunicacoes_cat")
+    .from("cat_comunicacoes")
     .select("id,empresa_id,nome_trabalhador,data_acidente,status,status_esocial")
     .neq("status", "cancelado");
 
